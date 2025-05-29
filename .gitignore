@@ -1,0 +1,6 @@
+node_modules/
+.env
+E0Dealegria.pem
+logs/
+dist/
+.DS_Store

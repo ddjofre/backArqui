@@ -1,0 +1,36 @@
+{
+  "name": "stock-market-api",
+  "version": "1.0.0",
+  "description": "API para simulador de mercado accionario",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "mqtt": "node mqtt-service.js",
+    "dev": "nodemon server.js",
+    "dev:mqtt": "nodemon mqtt-service.js",
+    "start:both": "concurrently \"npm run start\" \"npm run mqtt\"",
+    "dev:both": "concurrently \"npm run dev\" \"npm run dev:mqtt\""
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "express-jwt": "^8.4.1",
+    "express-oauth2-jwt-bearer": "^1.6.1",
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.0.1",
+    "mongoose": "^7.8.6",
+    "morgan": "^1.10.0",
+    "mqtt": "^4.3.8",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^9.0.0",
+    "winston": "^3.8.2",
+    "yaml": "^2.7.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.1",
+    "nodemon": "^3.1.10"
+  }
+}

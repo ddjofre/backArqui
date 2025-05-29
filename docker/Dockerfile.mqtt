@@ -1,0 +1,19 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package.json and install dependencies
+COPY package*.json ./
+RUN npm install --production
+
+# Copy the application code
+COPY . .
+
+# Expose the application port (optional, MQTT service doesn't expose HTTP)
+EXPOSE 3000
+
+# Create a directory for logs
+RUN mkdir -p logs
+
+# Start the MQTT service
+CMD ["node", "mqtt-service.js"]

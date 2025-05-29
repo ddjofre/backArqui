@@ -1,0 +1,73 @@
+version: '3'
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: stock-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - stock-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: stock-api
+    depends_on:
+      - mongodb
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/stock-market
+      - GROUP_ID=18
+      - MQTT_URL=mqtt://broker.iic2173.org:9000
+      - MQTT_USERNAME=students
+      - MQTT_PASSWORD=iic2173-2025-1-students
+      - CORS_ORIGIN=*
+      - AUTH0_DOMAIN=https://api.juanbenatuile0iic2173.me
+      - AUTH0_AUDIENCE=https://api.juanbenatuile0iic2173.me
+      - AUTH0_ISSUER=https://dev-qtg1vycp6zc4uv20.us.auth0.com/
+    ports:
+      - "3000:3000"
+    networks:
+      - stock-network
+    restart: always
+    volumes:
+      - ./logs:/app/logs
+
+  mqtt-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.mqtt
+    container_name: stock-mqtt-client
+    depends_on:
+      - mongodb
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/stock-market
+      - GROUP_ID=18
+      - MQTT_URL=mqtt://broker.iic2173.org:9000
+      - MQTT_USERNAME=students
+      - MQTT_PASSWORD=iic2173-2025-1-students
+    networks:
+      - stock-network
+    restart: always
+    volumes:
+      - ./logs:/app/logs
+
+networks:
+  stock-network:
+    driver: bridge
+
+volumes:
+  mongo-data:

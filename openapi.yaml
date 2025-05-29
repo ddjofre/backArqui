@@ -1,0 +1,347 @@
+openapi: 3.0.0
+info:
+  title: Stock Market API
+  description: API documentation for the Stock Market backend project
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the API
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /user:
+    get:
+      summary: Get the default user
+      tags:
+        - Users
+      responses:
+        '200':
+          description: Default user information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+                  name:
+                    type: string
+                  walletBalance:
+                    type: number
+  /user/wallet/recharge:
+    post:
+      summary: Recharge the default user's wallet
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                  example: 100
+      responses:
+        '200':
+          description: Wallet recharged successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  walletBalance:
+                    type: number
+  /user/portfolio:
+    get:
+      summary: Get the default user's portfolio
+      tags:
+        - Users
+      responses:
+        '200':
+          description: Default user's portfolio
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    symbol:
+                      type: string
+                    quantity:
+                      type: number
+                    averagePrice:
+                      type: number
+                    totalInvested:
+                      type: number
+  /stocks:
+    get:
+      summary: Get all stocks with optional filters
+      tags:
+        - Stocks
+      parameters:
+        - in: query
+          name: symbol
+          schema:
+            type: string
+          description: Filter by stock symbol
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: Filter by stock name
+        - in: query
+          name: minPrice
+          schema:
+            type: number
+          description: Minimum stock price
+        - in: query
+          name: maxPrice
+          schema:
+            type: number
+          description: Maximum stock price
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number for pagination
+        - in: query
+          name: count
+          schema:
+            type: integer
+          description: Number of items per page
+      responses:
+        '200':
+          description: List of stocks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        symbol:
+                          type: string
+                        price:
+                          type: number
+                        quantity:
+                          type: number
+                  page:
+                    type: integer
+                  count:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  total:
+                    type: integer
+  /stocks/{symbol}:
+    get:
+      summary: Get stock by symbol
+      tags:
+        - Stocks
+      parameters:
+        - in: path
+          name: symbol
+          required: true
+          schema:
+            type: string
+          description: Stock symbol
+      responses:
+        '200':
+          description: Stock details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  symbol:
+                    type: string
+                  price:
+                    type: number
+                  quantity:
+                    type: number
+  /purchases:
+    post:
+      summary: Create a purchase request
+      tags:
+        - Purchases
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                symbol:
+                  type: string
+                quantity:
+                  type: integer
+      responses:
+        '201':
+          description: Purchase request created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  request_id:
+                    type: string
+                  status:
+                    type: string
+    get:
+      summary: Get purchase requests for the default user
+      tags:
+        - Purchases
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number for pagination
+        - in: query
+          name: count
+          schema:
+            type: integer
+          description: Number of items per page
+      responses:
+        '200':
+          description: List of purchase requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        request_id:
+                          type: string
+                        symbol:
+                          type: string
+                        quantity:
+                          type: integer
+                        price:
+                          type: number
+                        status:
+                          type: string
+                  page:
+                    type: integer
+                  count:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  total:
+                    type: integer
+  /purchases/{requestId}/retry:
+    post:
+      summary: Retry a failed purchase request
+      tags:
+        - Purchases
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+          description: Purchase request ID
+      responses:
+        '201':
+          description: Purchase request retried successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  request_id:
+                    type: string
+                  status:
+                    type: string
+  /events:
+    get:
+      summary: Get all events
+      tags:
+        - Events
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+          description: Filter by event type
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date-time
+          description: Start date for filtering
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date-time
+          description: End date for filtering
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number for pagination
+        - in: query
+          name: count
+          schema:
+            type: integer
+          description: Number of items per page
+      responses:
+        '200':
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        data:
+                          type: object
+                        timestamp:
+                          type: string
+                          format: date-time
+                  page:
+                    type: integer
+                  count:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  total:
+                    type: integer
