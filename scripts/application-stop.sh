@@ -1,4 +1,5 @@
 #!/bin/bash
 
-echo "Stop Aplication"
-docker compose --file docker-compose.production.yml down
+echo "Stop Application"
+cd /home/ubuntu/
+docker compose --file docker-compose.production.yml down || true

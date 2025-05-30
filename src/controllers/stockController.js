@@ -51,28 +51,7 @@ const getStock = async (req, res) => {
   }
 };
 
-
-const getStockQuantity = async (req, res) => {
-  try {
-    const { symbol } = req.params;
-    
-    const stock = await getStockBySymbol(symbol);
-    
-    res.json(stock);
-  } catch (error) {
-    logger.error(`Error en controlador getStock:`, error);
-    
-    if (error.message.includes('no encontrado')) {
-      return res.status(404).json({ error: error.message });
-    }
-    
-    res.status(500).json({ error: 'Error al obtener stock' });
-  }
-};
-
-
 module.exports = {
   getAllStocks,
-  getStock,
-  getStockByQuantity
+  getStock
 };

@@ -77,7 +77,7 @@ const getStockBySymbol = async (symbol) => {
     logger.error(`Error al obtener stock ${symbol}:`, error);
     throw error;
   }
-};z
+};
 
 // Actualizar cantidad de stock
 const updateStockQuantity = async (symbol, quantityChange) => {

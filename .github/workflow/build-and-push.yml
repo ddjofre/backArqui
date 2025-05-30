@@ -80,7 +80,12 @@ jobs:
         with:
           registry-type: public
           mask-password: "true"
+      
 
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/*.sh
+        
       - name: Zip artifact to deploy
         run: |
           zip -r deploy.zip scripts/ appspec.yml docker-compose.production.yml
