@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: stock-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: always
+    environment:
+      - MONGO_INITDB_DATABASE=stock-market
+
+  api:
+    image: public.ecr.aws/d5g5l5p3/iic2173_grupo18_backend:api-latest
+    container_name: stock-api
+    depends_on:
+      - mongodb
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/stock-market
+      - GROUP_ID=18
+      - MQTT_URL=mqtt://broker.iic2173.org:9000
+      - MQTT_USERNAME=students
+      - MQTT_PASSWORD=iic2173-2025-1-students
+      - CORS_ORIGIN=*
+      - AUTH0_DOMAIN=https://api.juanbenatuile0iic2173.me
+      - AUTH0_AUDIENCE=https://api.juanbenatuile0iic2173.me
+      - AUTH0_ISSUER=https://dev-qtg1vycp6zc4uv20.us.auth0.com/
+    ports:
+      - "3000:3000"
+    restart: always
+
+  mqtt-service:
+    image: public.ecr.aws/d5g5l5p3/iic2173_grupo18_backend:mqtt-latest
+    container_name: stock-mqtt-client
+    depends_on:
+      - mongodb
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/stock-market
+      - GROUP_ID=18
+      - MQTT_URL=mqtt://broker.iic2173.org:9000
+      - MQTT_USERNAME=students
+      - MQTT_PASSWORD=iic2173-2025-1-students
+    restart: always
+
+volumes:
+  mongo-data:
