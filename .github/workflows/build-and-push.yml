@@ -1,0 +1,121 @@
+name: Build and Push to ECR
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+env:
+  AWS_REGION_ECR: us-east-1       # ECR público siempre en us-east-1
+  AWS_REGION_DEPLOY: us-east-2    # Tu región de CodeDeploy
+  S3_BUCKET: backend-grupo18
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkpoint - Starting build
+        run: echo "Starting build process..."
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS Credentials for ECR
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID0}}
+          aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY0}} #revisar nombre de los secrets en el backend
+          aws-region: ${{ env.AWS_REGION_ECR }}
+
+      - name: Login to Amazon ECR Public
+        id: login-ecr-public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+          mask-password: "true"
+
+      - name: Build, tag, and push docker images to Amazon ECR Public
+        env:
+          REGISTRY: ${{steps.login-ecr-public.outputs.registry}}
+          REGISTRY_ALIAS: d5g5l5p3
+          REPOSITORY: iic2173_grupo18_backend  ######revisar nombre de repositori, a ver si está bien, abajo el run en vez de api-lastest poner /$image_tag
+          IMAGE_TAG_API: api-latest
+          IMAGE_TAG_MQTT: mqtt-lastest ##
+        run: |
+          echo "Building API image..."
+          docker build -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG_API -f docker/Dockerfile.api . 
+          echo "Pushing API image..."
+          docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG_API
+          
+          echo "Building MQTT image..."
+          docker build -t $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG_MQTT -f docker/Dockerfile.mqtt .
+          echo "Pushing MQTT image..."
+          docker push $REGISTRY/$REGISTRY_ALIAS/$REPOSITORY:$IMAGE_TAG_MQTT
+          
+          echo "Images pushed successfully!"
+
+  deploy-to-ec2:
+    runs-on: ubuntu-latest
+    if: ${{always()}}
+    needs: [build-and-push]
+    
+    steps:
+      - name: Checkpoint - Starting deployment
+        run: echo "Starting deployment process..."
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS Credentials for Deployment
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID0}}
+          aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY0}}
+          aws-region: ${{ env.AWS_REGION_DEPLOY }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr-public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+          mask-password: "true"
+        
+      - name: Create deployment package
+        run: |
+          echo "Creating deployment package..."
+          zip -r deploy.zip scripts/ appspec.yml docker-compose.production.yml
+          echo "Package created: $(ls -lh deploy.zip)"
+          
+      - name: Copy to S3
+        run: |
+          echo "Copying to S3 bucket in region ${{ env.AWS_REGION_DEPLOY }}..."
+          aws s3 cp deploy.zip s3://${{ env.S3_BUCKET }}/deploy.zip --region ${{ env.AWS_REGION_DEPLOY }}
+          echo "Verifying upload..."
+          aws s3 ls s3://${{ env.S3_BUCKET }}/deploy.zip --region ${{ env.AWS_REGION_DEPLOY }}
+      
+      - name: Create CodeDeploy Deployment
+        id: create-deployment
+        run: |
+          echo "Creating CodeDeploy deployment in region ${{ env.AWS_REGION_DEPLOY }}..."
+          deploymentId=$(aws deploy create-deployment \
+            --application-name iic2173-grupo18-app \
+            --deployment-group-name group-iic2173-grupo18-app \
+            --region ${{ env.AWS_REGION_DEPLOY }} \
+            --s3-location bucket=${{ env.S3_BUCKET }},key=deploy.zip,bundleType=zip \
+            --description "Automatic deployment from GitHub Actions commit ${{github.sha}}" | jq -r '.deploymentId')
+          echo "Deployment ID: $deploymentId"
+          echo "deploymentId=$deploymentId" >> $GITHUB_OUTPUT
+    
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment ${{ steps.create-deployment.outputs.deploymentId }} to complete..."
+          aws deploy wait deployment-successful \
+            --deployment-id ${{ steps.create-deployment.outputs.deploymentId }} \
+            --region ${{ env.AWS_REGION_DEPLOY }}
+          echo "Deployment completed successfully!"

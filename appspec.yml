@@ -1,0 +1,27 @@
+version: 0.0
+os: linux
+files:
+  # Que archivos se copiaran en la instancia
+  - source: ./docker-compose.production.yml
+    destination: /home/ubuntu/
+  - source: scripts
+    destination: /home/ubuntu/scripts
+
+# Ciclo de vida del deployment 
+hooks:
+  ApplicationStop:
+    - location: /home/ubuntu/scripts/application-stop.sh
+      timeout: 300
+      runas: ubuntu
+  AfterInstall:
+    - location: /home/ubuntu/scripts/after-install.sh
+      timeout: 300
+      runas: ubuntu
+  ApplicationStart:
+    - location: /home/ubuntu/scripts/application-start.sh
+      timeout: 300
+      runas: ubuntu
+  ValidateService:
+    - location: /home/ubuntu/scripts/validate-service.sh
+      timeout: 300
+      runas: ubuntu
